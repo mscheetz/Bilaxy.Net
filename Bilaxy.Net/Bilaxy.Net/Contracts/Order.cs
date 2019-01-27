@@ -20,6 +20,6 @@ namespace Bilaxy.Net.Contracts
         public decimal Amount { get; set; }
 
         [JsonProperty(PropertyName = "type")]
-        public TradeType Type { get; set; }
+        public Side Type { get; set; }
     }
 }

@@ -13,9 +13,15 @@ namespace Bilaxy.Net.Contracts
         Four = 4
     }
 
-    public enum TradeType
+    public enum Side
     {
         buy,
         sell
+    }
+
+    public enum OrderType
+    {
+        AllOrders = 0,
+        Pending = 1
     }
 }
