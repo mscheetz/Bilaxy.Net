@@ -10,7 +10,6 @@ namespace Bilaxy.Net
     #region Usings
 
     using Bilaxy.Net.Contracts;
-    using Bilaxy.Net.Core;
     using DateTimeHelpers;
     using System;
     using System.Collections.Generic;
@@ -27,40 +26,29 @@ namespace Bilaxy.Net
         #region Public Api
 
         /// <summary>
+        /// Get a trading pair
+        /// </summary>
+        /// <param name="pair">Pair to find</param>
+        /// <returns>Asset of pair</returns>
+        public static async Task<Asset> GetTradingPair(this IBilaxyDotNet service, string pair)
+        {
+            var coins = await service.GetCurrencies();
+
+            var pairs = coins.Select(c => new Asset(c.SymbolId, $@"{c.Symbol}/{c.Group}")).ToList();
+
+            return pairs.Where(p => p.DashedPair.Equals(pair) || p.Pair.Equals(pair)).FirstOrDefault();
+        }
+
+        /// <summary>
         /// Get ticker for a trading pair
         /// </summary>
         /// <param name="pair">Trading pair</param>
         /// <returns>Ticker object</returns>
         public static async Task<Ticker> GetTicker(this IBilaxyDotNet service, string pair)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
 
-            return await service.GetTicker(pairId);
-        }
-
-        /// <summary>
-        /// Get tickers for all trading pairs
-        /// </summary>
-        /// <returns>Collection of Ticker objects</returns>
-        public static async Task<List<Ticker>> GetTickers(this IBilaxyDotNet service)
-        {
-            return await service.GetTickers(null);
-        }
-
-        /// <summary>
-        /// Get tickers for all trading pairs
-        /// </summary>
-        /// <param name="pairs">Trading pairs to query</param>
-        /// <returns>Collection of Ticker objects</returns>
-        public static async Task<List<Ticker>> GetTickers(this IBilaxyDotNet service, string[] pairs)
-        {
-            var pairIds = new List<int>();
-            foreach (var pair in pairs)
-            {
-                pairIds.Add(BilaxyHelper.GetId(pair));
-            }
-            
-            return await service.GetTickers(pairIds.ToArray());
+            return await service.GetTicker(asset.AssetId);
         }
 
         /// <summary>
@@ -71,11 +59,61 @@ namespace Bilaxy.Net
         /// <returns>Depth for trading pair</returns>
         public static async Task<Depth> GetDepth(this IBilaxyDotNet service, string pair, Figures figures = Figures.Default)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
 
-            return await service.GetDepth(pairId, figures);
+            return await service.GetDepth(asset.AssetId, figures);
         }
 
+        /// <summary>
+        /// Get market depth converted
+        /// </summary>
+        /// <param name="pairId">Trading pair id</param>
+        /// <param name="figures">Significant figures</param>
+        /// <returns>DepthConverted for trading pair</returns>
+        public static async Task<DepthConverted> GetDepthConverted(this IBilaxyDotNet service, int pairId, Figures figures = Figures.Default)
+        {
+            var results = await service.GetDepth(pairId, figures);
+
+            var asks = new List<DepthDetail>();
+
+            foreach(var ask in results.Asks)
+            {
+                var detail = new DepthDetail
+                {
+                    Price = ask[0],
+                    Quantity = ask[1],
+                    TotalBase = ask[2]
+                };
+                asks.Add(detail);
+            }
+            var bids = new List<DepthDetail>();
+
+            foreach (var bid in results.Bids)
+            {
+                var detail = new DepthDetail
+                {
+                    Price = bid[0],
+                    Quantity = bid[1],
+                    TotalBase = bid[2]
+                };
+                bids.Add(detail);
+            }
+
+            return new DepthConverted(asks, bids);
+        }
+
+        /// <summary>
+        /// Get market depth converted
+        /// </summary>
+        /// <param name="pair">Trading pair</param>
+        /// <param name="figures">Significant figures</param>
+        /// <returns>Depth for trading pair</returns>
+        public static async Task<DepthConverted> GetDepthConverted(this IBilaxyDotNet service, string pair, Figures figures = Figures.Default)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await GetDepthConverted(service, asset.AssetId, figures);
+        }
         /// <summary>
         /// Get recent orders
         /// </summary>
@@ -95,9 +133,9 @@ namespace Bilaxy.Net
         /// <returns>Collection of Order objects</returns>
         public static async Task<List<Order>> GetPairOrders(this IBilaxyDotNet service, string pair, int records)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
 
-            return await service.GetPairOrders(pairId, records);
+            return await service.GetPairOrders(asset.AssetId, records);
         }
 
         /// <summary>
@@ -122,9 +160,13 @@ namespace Bilaxy.Net
         /// <returns>String of deposit address</returns>
         public static async Task<string> GetDepositAddress(this IBilaxyDotNet service, string symbol)
         {
-            var symbolId = BilaxyHelper.GetId(symbol);
+            var currencies = await service.GetCurrencies();
+            var currency = currencies.Where(c => c.Symbol.Equals(symbol)).FirstOrDefault();
 
-            return await service.GetDepositAddress(symbolId);
+            if (currency != null)
+                return await service.GetDepositAddress(currency.SymbolId);
+            else
+                throw new Exception("Currency does not exist");
         }
 
         /// <summary>
@@ -168,7 +210,6 @@ namespace Bilaxy.Net
         /// <returns>Collection of Order objects</returns>
         public static async Task<List<Order>> GetOpenOrders(this IBilaxyDotNet service, int pairId)
         {
-
             return await service.GetOrders(pairId, 0, OrderType.Pending);
         }
 
@@ -203,9 +244,9 @@ namespace Bilaxy.Net
         /// <returns>Collection of Order objects</returns>
         public static async Task<List<Order>> GetOpenOrders(this IBilaxyDotNet service, string pair)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
 
-            return await service.GetOrders(pairId, 0, OrderType.Pending);
+            return await service.GetOrders(asset.AssetId, 0, OrderType.Pending);
         }
 
         /// <summary>
@@ -216,10 +257,10 @@ namespace Bilaxy.Net
         /// <returns>Collection of Order objects</returns>
         public static async Task<List<Order>> GetOpenOrders(this IBilaxyDotNet service, string pair, DateTime fromDate)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
             var unixTime = dtHelper.LocalToUnixTime(fromDate);
 
-            return await service.GetOrders(pairId, unixTime, OrderType.Pending);
+            return await service.GetOrders(asset.AssetId, unixTime, OrderType.Pending);
         }
 
         /// <summary>
@@ -230,9 +271,39 @@ namespace Bilaxy.Net
         /// <returns>Collection of Order objects</returns>
         public static async Task<List<Order>> GetOpenOrders(this IBilaxyDotNet service, string pair, long fromDate)
         {
-            var pairId = BilaxyHelper.GetId(pair);
+            var asset = await GetTradingPair(service, pair);
 
-            return await service.GetOrders(pairId, fromDate, OrderType.Pending);
+            return await service.GetOrders(asset.AssetId, fromDate, OrderType.Pending);
+        }
+
+        /// <summary>
+        /// Place a limit order
+        /// </summary>
+        /// <param name="pair">Trading pair</param>
+        /// <param name="price">Order price</param>
+        /// <param name="quantity">Order quantity</param>
+        /// <param name="side">Order side</param>
+        /// <returns>New order id</returns>
+        public static async Task<string> LimitOrder(this IBilaxyDotNet service, string pair, decimal price, decimal quantity, Side side)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await service.PlaceOrder(asset.AssetId, quantity, price, side);
+        }
+
+        /// <summary>
+        /// Place a market order
+        /// </summary>
+        /// <param name="pair">Trading pair</param>
+        /// <param name="quantity">Order quantity</param>
+        /// <param name="side">Order side</param>
+        /// <returns>New order id</returns>
+        public static async Task<string> MarketOrder(this IBilaxyDotNet service, string pair, decimal price, decimal quantity, Side side)
+        {
+            var asset = await GetTradingPair(service, pair);
+            var ticker = await service.GetTicker(asset.AssetId);
+
+            return await service.PlaceOrder(asset.AssetId, quantity, ticker.Last, side);
         }
 
         #endregion Secure Api

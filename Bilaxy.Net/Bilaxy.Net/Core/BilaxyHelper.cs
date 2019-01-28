@@ -24,7 +24,7 @@ namespace Bilaxy.Net.Core
         /// </summary>
         /// <param name="parms">Dictionary of paramters</param>
         /// <returns>string of all keys and values as a query string</returns>
-        public static string ParmsToQueryString(Dictionary<string, object> parms)
+        public static string ParmsToQueryString(SortedDictionary<string, object> parms)
         {
             var queryString = string.Empty;
 

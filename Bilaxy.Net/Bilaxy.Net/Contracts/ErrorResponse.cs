@@ -1,8 +1,8 @@
-﻿// -----------------------------------------------------------------------------
-// <copyright file="BilaxyResponse" company="Matt Scheetz">
+// -----------------------------------------------------------------------------
+// <copyright file="ErrorResponse" company="Matt Scheetz">
 //     Copyright (c) Matt Scheetz All Rights Reserved
 // </copyright>
-// <author name="Matt Scheetz" date="1/27/2019 2:48:53 PM" />
+// <author name="Matt Scheetz" date="1/27/2019 7:49:04 PM" />
 // -----------------------------------------------------------------------------
 
 namespace Bilaxy.Net.Contracts
@@ -13,12 +13,13 @@ namespace Bilaxy.Net.Contracts
 
     #endregion Usings
 
-    public class BilaxyResponse<T>
+    public class ErrorResponse
     {
+        #region Properties
+
         [JsonProperty(PropertyName = "code")]
         public int Code { get; set; }
 
-        [JsonProperty(PropertyName = "data")]
-        public T Data { get; set; }
+        #endregion Properties
     }
 }

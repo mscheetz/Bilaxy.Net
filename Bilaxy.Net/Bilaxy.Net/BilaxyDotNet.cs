@@ -22,11 +22,14 @@ namespace Bilaxy.Net
 
     public class BilaxyDotNet : RepositoryBase, IBilaxyDotNet
     {
+        private List<Asset> assets;
+
         /// <summary>
         /// Constructor for unsigned endpoints
         /// </summary>
         public BilaxyDotNet() : base()
         {
+            LoadRepository();
         }
 
         /// <summary>
@@ -51,6 +54,7 @@ namespace Bilaxy.Net
             {
                 var apiCredentials = _fileRepo.GetDataFromFile<ApiCredentials>(configPath);
                 base.SetApiKey(apiCredentials);
+                LoadRepository();
             }
             else
             {
@@ -64,10 +68,42 @@ namespace Bilaxy.Net
         /// <param name="apiCredentials">Api Key information</param>
         public BilaxyDotNet(ApiCredentials apiCredentials) : base(apiCredentials)
         {
+            LoadRepository();
+        }
+
+        private void LoadRepository()
+        {
+            assets = GetTradingPairs().Result;
         }
 
         #region Public Methods
 
+        /// <summary>
+        /// Get all currencies on the exchange
+        /// </summary>
+        /// <returns>Collection of Coin objects</returns>
+        public async Task<List<Coin>> GetCurrencies()
+        {
+            var endpoint = @"/v1/coins/";
+
+            var response = await base.GetRequest<List<Coin>>(endpoint);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Get all trading pairs
+        /// </summary>
+        /// <param name="service"></param>
+        /// <returns>Collection of trading pairs</returns>
+        public async Task<List<Asset>> GetTradingPairs()
+        {
+            var coins = await GetCurrencies();
+
+            var pairs = coins.Select(c => new Asset(c.SymbolId, $@"{c.Symbol}/{c.Group}")).ToList();
+
+            return pairs;
+        }
 
         /// <summary>
         /// Get ticker for a trading pair
@@ -90,18 +126,19 @@ namespace Bilaxy.Net
         /// <summary>
         /// Get tickers for all trading pairs
         /// </summary>
-        /// <param name="pairIds">Trading pairs to query</param>
         /// <returns>Collection of Ticker objects</returns>
-        public async Task<List<Ticker>> GetTickers(int[] pairIds)
+        public async Task<List<Ticker>> GetTickers()
         {
             var endpoint = $@"/v1/tickers";
-            if (pairIds != null && pairIds.Length > 0)
-            {
-                var ids = string.Join(",", pairIds);
-                endpoint += $@"?symbol={ids}";
-            }
 
             var response = await base.GetRequest<List<Ticker>>(endpoint);
+
+            foreach(var item in response)
+            {
+                var asset = BilaxyHelper.GetAsset(item.PairId);
+                if(asset != null)
+                    item.Pair = asset.DashedPair;
+            }
 
             return response;
         }
@@ -161,7 +198,7 @@ namespace Bilaxy.Net
         public async Task<string> GetDepositAddress(int assetId)
         {
             var endpoint = @"/v1/coin_address";
-            var parms = new Dictionary<string, object>();
+            var parms = new SortedDictionary<string, object>();
             parms.Add("symbol", assetId);
 
             var response = await base.GetRequest<string>(endpoint, parms, true);
@@ -179,13 +216,64 @@ namespace Bilaxy.Net
         public async Task<List<Order>> GetOrders(int pairId, long fromDate, OrderType orderType)
         {
             var endpoint = @"/v1/trade_list";
-            var parms = new Dictionary<string, object>();
+            var parms = new SortedDictionary<string, object>();
             parms.Add("symbol", pairId);
             if (fromDate > 0)
                 parms.Add("since", fromDate);
             parms.Add("type", (int)orderType);
 
             var response = await base.GetRequest<List<Order>>(endpoint, parms, true);
+
+            return response;
+        }        
+
+        /// <summary>
+        /// Get an order
+        /// </summary>
+        /// <param name="orderId">Order id</param>
+        /// <returns>Order object</returns>
+        public async Task<List<Order>> GetOrder(int orderId)
+        {
+            var endpoint = @"/v1/trade_view";
+            var parms = new SortedDictionary<string, object>();
+            parms.Add("id", orderId);
+
+            var response = await base.GetRequest<List<Order>>(endpoint, parms, true);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Cancel an order
+        /// </summary>
+        /// <param name="orderId">Order id</param>
+        /// <returns>Canceled order id</returns>
+        public async Task<string> CancelOrder(int orderId)
+        {
+            var endpoint = @"/v1/cancel_trade";
+            var parms = new SortedDictionary<string, object>();
+            parms.Add("id", orderId);
+
+            var response = await base.PostRequest<string>(endpoint, parms);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Place an order
+        /// </summary>
+        /// <param name="orderId">Order id</param>
+        /// <returns>Placed order id</returns>
+        public async Task<string> PlaceOrder(int pairId, decimal quantity, decimal price, Side side)
+        {
+            var endpoint = @"/v1/trade";
+            var parms = new SortedDictionary<string, object>();
+            parms.Add("symbol", pairId);
+            parms.Add("amount", quantity);
+            parms.Add("price", price);
+            parms.Add("type", side.ToString().ToLower());
+
+            var response = await base.PostRequest<string>(endpoint, parms);
 
             return response;
         }

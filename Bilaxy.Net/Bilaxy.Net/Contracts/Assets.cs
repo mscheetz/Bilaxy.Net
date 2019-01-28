@@ -1,9 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// -----------------------------------------------------------------------------
+// <copyright file="Asset" company="Matt Scheetz">
+//     Copyright (c) Matt Scheetz All Rights Reserved
+// </copyright>
+// <author name="Matt Scheetz" date="1/27/2019 2:48:53 PM" />
+// -----------------------------------------------------------------------------
 
 namespace Bilaxy.Net.Contracts
 {
+    #region Usings
+
+    using System.Collections.Generic;
+
+    #endregion Usings
+
     public class Asset
     {
         public int AssetId { get; set; }
@@ -137,6 +146,10 @@ namespace Bilaxy.Net.Contracts
             assets.Add(new Asset(139, @"COVA/ETH"));
             assets.Add(new Asset(140, @"RIF/ETH"));
             assets.Add(new Asset(141, @"RIF/BTC"));
+            assets.Add(new Asset(142, @"LTO/ETH"));
+            assets.Add(new Asset(143, @"CVNT/ETH"));
+            assets.Add(new Asset(144, @"SKYM/ETH"));
+            assets.Add(new Asset(145, @"CPT/ETH"));
 
             return assets;
         }

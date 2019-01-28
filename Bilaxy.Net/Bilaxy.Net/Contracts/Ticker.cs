@@ -1,10 +1,18 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// -----------------------------------------------------------------------------
+// <copyright file="Ticker" company="Matt Scheetz">
+//     Copyright (c) Matt Scheetz All Rights Reserved
+// </copyright>
+// <author name="Matt Scheetz" date="1/27/2019 2:48:53 PM" />
+// -----------------------------------------------------------------------------
 
 namespace Bilaxy.Net.Contracts
 {
+    #region Usings
+
+    using Newtonsoft.Json;
+
+    #endregion Usings
+
     public class Ticker
     {
         public string Pair { get; set; }

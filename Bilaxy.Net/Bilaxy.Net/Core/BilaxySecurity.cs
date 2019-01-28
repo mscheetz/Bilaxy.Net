@@ -16,7 +16,7 @@ namespace Bilaxy.Net.Core
             _apiKey = key;
             _apiSecret = secret;
 
-            var parms = new Dictionary<string, object>();
+            var parms = new SortedDictionary<string, object>();
 
             var stringifiedMessage = Stringify(parms);
 
@@ -25,11 +25,11 @@ namespace Bilaxy.Net.Core
             return signature;
         }
 
-        public static string PostSignature(string key, string secret, Dictionary<string, object> parms)
+        public static string PostSignature(string key, string secret, SortedDictionary<string, object> parms)
         {
             _apiKey = key;
             _apiSecret = secret;
-
+            
             var stringifiedMessage = Stringify(parms);
 
             var signature = SignMessage(stringifiedMessage);
@@ -37,7 +37,7 @@ namespace Bilaxy.Net.Core
             return signature;
         }
 
-        private static string Stringify(Dictionary<string, object> parms)
+        private static string Stringify(SortedDictionary<string, object> parms)
         {
             var stringify = string.Empty;
 
@@ -65,7 +65,7 @@ namespace Bilaxy.Net.Core
 
                 foreach (byte b in hash)
                 {
-                    sb.Append(b.ToString("X2"));
+                    sb.Append(b.ToString("x2"));
                 }
 
                 return sb.ToString();

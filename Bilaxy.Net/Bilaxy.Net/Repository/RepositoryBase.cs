@@ -9,9 +9,10 @@ namespace Bilaxy.Net.Repository
 {
     using Bilaxy.Net.Contracts;
     using Bilaxy.Net.Core;
+    using Bilaxy.Net.Interface;
     using DateTimeHelpers;
-    using RESTApiAccess;
-    using RESTApiAccess.Interface;
+    //using RESTApiAccess;
+    //using RESTApiAccess.Interface;
     #region Usings
 
     using System;
@@ -63,13 +64,15 @@ namespace Bilaxy.Net.Repository
         /// <param name="parms">Parameters to pass</param>
         /// <param name="secure">Secure endpoint?</param>
         /// <returns>Object from response</returns>
-        public async Task<T> GetRequest<T>(string endpoint, Dictionary<string, object> parms, bool secure = false)
+        public async Task<T> GetRequest<T>(string endpoint, SortedDictionary<string, object> parms, bool secure = false)
         {
             var queryString = BilaxyHelper.ParmsToQueryString(parms);
 
             if(secure)
             {
                 var signature = GetSignature(parms);
+                if (!string.IsNullOrEmpty(queryString))
+                    queryString += @"&";
 
                 queryString += $@"key={_apiCreds.ApiKey}&sign={signature}";
             }
@@ -92,7 +95,7 @@ namespace Bilaxy.Net.Repository
             {
                 var signature = GetSignature();
 
-                endpoint += $@"&key={_apiCreds.ApiKey}&sign={signature}";
+                endpoint += $@"?key={_apiCreds.ApiKey}&sign={signature}";
             }
 
             return await OnGetRequest<T>(endpoint);
@@ -125,17 +128,14 @@ namespace Bilaxy.Net.Repository
         /// </summary>
         /// <typeparam name="T">Object to return</typeparam>
         /// <param name="endpoint">Endpoint of request</param>
-        /// <param name="timestamp">Timestamp for transaction</param>
         /// <returns>Object from response</returns>
-        public async Task<T> GetRequest<T>(string endpoint, long timestamp)
+        public async Task<T> GetRequest<T>(string endpoint)
         {
-            var headers = GetRequestHeaders(HttpMethod.Get, endpoint, timestamp);
-
             var url = baseUrl + endpoint;
 
             try
             {
-                var response = await _restRepo.GetApiStream<BilaxyResponse<T>>(url, headers);
+                var response = await _restRepo.GetApiStream<BilaxyResponse<T>>(url);
 
                 return response.Data;
             }
@@ -150,18 +150,19 @@ namespace Bilaxy.Net.Repository
         /// </summary>
         /// <typeparam name="T">Object to return</typeparam>
         /// <param name="endpoint">Endpoint of request</param>
-        /// <param name="timestamp">Timestamp for transaction</param>
         /// <param name="body">Request body data</param>
         /// <returns>Object from response</returns>
-        public async Task<T> PostRequest<T>(string endpoint, long timestamp, SortedDictionary<string, object> body)
+        public async Task<T> PostRequest<T>(string endpoint, SortedDictionary<string, object> body)
         {
-            var headers = GetRequestHeaders(HttpMethod.Post, endpoint, timestamp, body);
+            var signature = GetSignature(body);
+            body.Add("key", _apiCreds.ApiKey);
+            body.Add("sign", signature);
 
             var url = baseUrl + endpoint;
 
             try
             {
-                var response = await _restRepo.PostApi<BilaxyResponse<T>, SortedDictionary<string, object>>(url, body, headers);
+                var response = await _restRepo.PostApi<BilaxyResponse<T>, SortedDictionary<string, object>>(url, body);
 
                 return response.Data;
             }
@@ -172,58 +173,22 @@ namespace Bilaxy.Net.Repository
         }
 
         /// <summary>
-        /// Initiate a Post request
+        /// Get a signature when no parameters passed
         /// </summary>
-        /// <typeparam name="T">Object to return</typeparam>
-        /// <param name="endpoint">Endpoint of request</param>
-        /// <param name="timestamp">Timestamp for transaction</param>
-        /// <returns>Object from response</returns>
-        public async Task<T> DeleteRequest<T>(string endpoint, long timestamp)
-        {
-            var headers = GetRequestHeaders(HttpMethod.Delete, endpoint, timestamp);
-
-            var url = baseUrl + endpoint;
-
-            try
-            {
-                var response = await _restRepo.DeleteApi<BilaxyResponse<T>>(url, headers);
-
-                return response.Data;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
+        /// <returns>signature string</returns>
         private string GetSignature()
         {
             return BilaxySecurity.GetSignature(_apiCreds.ApiKey, _apiCreds.ApiSecret);
         }
 
-        private string GetSignature(Dictionary<string, object> parms)
+        /// <summary>
+        /// Get a signature when parameters passed
+        /// </summary>
+        /// <param name="parms">Parameters passed to request</param>
+        /// <returns>signature string</returns>
+        private string GetSignature(SortedDictionary<string, object> parms)
         {
             return BilaxySecurity.PostSignature(_apiCreds.ApiKey, _apiCreds.ApiSecret, parms);
-        }
-
-        /// <summary>
-        /// Get Request headers
-        /// </summary>
-        /// <param name="httpMethod">Http Method</param>
-        /// <param name="endpoint">Endpoint to access</param>
-        /// <param name="timestamp">Timestamp for transaction</param>
-        /// <param name="body">Body data to be passed</param>
-        /// <returns>Dictionary of request headers</returns>
-        private Dictionary<string, string> GetRequestHeaders(HttpMethod httpMethod, string endpoint, long timestamp, SortedDictionary<string, object> body = null)
-        {
-            var headers = new Dictionary<string, string>();
-
-            headers.Add("KC-API-KEY", _apiCreds.ApiKey);
-            headers.Add("KC-API-SIGN", BilaxySecurity.GetSignature(httpMethod, endpoint, timestamp, _apiCreds.ApiSecret, body));
-            headers.Add("KC-API-TIMESTAMP", timestamp.ToString());
-            headers.Add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)");
-
-            return headers;
         }
     }
 }

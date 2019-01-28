@@ -7,18 +7,29 @@
 
 namespace Bilaxy.Net
 {
-    using Bilaxy.Net.Contracts;
     #region Usings
 
-    using System;
+    using Bilaxy.Net.Contracts;
     using System.Collections.Generic;
-    using System.Text;
     using System.Threading.Tasks;
 
     #endregion Usings
 
     public interface IBilaxyDotNet
     {
+        /// <summary>
+        /// Get all currencies on the exchange
+        /// </summary>
+        /// <returns>Collection of Coin objects</returns>
+        Task<List<Coin>> GetCurrencies();
+        
+        /// <summary>
+        /// Get all trading pairs
+        /// </summary>
+        /// <param name="service"></param>
+        /// <returns>Collection of trading pairs</returns>
+        Task<List<Asset>> GetTradingPairs();
+
         /// <summary>
         /// Get ticker for a trading pair
         /// </summary>
@@ -29,9 +40,8 @@ namespace Bilaxy.Net
         /// <summary>
         /// Get tickers for all trading pairs
         /// </summary>
-        /// <param name="pairIds">Trading pairs to query</param>
         /// <returns>Collection of Ticker objects</returns>
-        Task<List<Ticker>> GetTickers(int[] pairIds);
+        Task<List<Ticker>> GetTickers();
 
         /// <summary>
         /// Get market depth
@@ -70,5 +80,19 @@ namespace Bilaxy.Net
         /// <param name="orderType">Order type</param>
         /// <returns>Collection of Order objects</returns>
         Task<List<Order>> GetOrders(int pairId, long fromDate, OrderType orderType);
+
+        /// <summary>
+        /// Cancel an order
+        /// </summary>
+        /// <param name="orderId">Order id</param>
+        /// <returns>Canceled order id</returns>
+        Task<string> CancelOrder(int orderId);
+
+        /// <summary>
+        /// Place an order
+        /// </summary>
+        /// <param name="orderId">Order id</param>
+        /// <returns>Placed order id</returns>
+        Task<string> PlaceOrder(int pairId, decimal quantity, decimal price, Side side);
     }
 }
