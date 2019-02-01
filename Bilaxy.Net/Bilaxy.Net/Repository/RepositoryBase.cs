@@ -77,7 +77,7 @@ namespace Bilaxy.Net.Repository
                 queryString += $@"key={_apiCreds.ApiKey}&sign={signature}";
             }
 
-            endpoint += $@"?{queryString}";
+            endpoint += $@"{queryString}";
 
             return await OnGetRequest<T>(endpoint);
         }

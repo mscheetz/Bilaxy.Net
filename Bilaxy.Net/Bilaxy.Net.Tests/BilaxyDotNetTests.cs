@@ -289,13 +289,13 @@ namespace Bilaxy.Net.Tests
         public void GetDepositAddress_Test()
         {
             // Arrange
-            var symbol = "ETH";
+            var symbol = "BTC";
 
             // Act
-            var balances = _svc.GetDepositAddress(symbol).Result;
+            var address = _svc.GetDepositAddress(symbol).Result;
 
             // Assert
-            Assert.NotNull(balances);
+            Assert.NotNull(address);
         }
     }
 }

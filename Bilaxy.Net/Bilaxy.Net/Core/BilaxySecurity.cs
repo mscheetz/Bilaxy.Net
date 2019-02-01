@@ -40,30 +40,39 @@ namespace Bilaxy.Net.Core
         private static string Stringify(SortedDictionary<string, object> parms)
         {
             var stringify = string.Empty;
-
+            var addIt = parms.Count > 0 ? true : false;
+            parms.Add("key", _apiKey);
+            parms.Add("secret", _apiSecret);
             var keys = parms.Keys.ToList();
             keys.Sort();
 
             foreach (var key in keys)
             {
-                stringify += $"{key}={parms[key]},";
+                if (!string.IsNullOrEmpty(stringify))
+                    stringify += "&";
+
+                stringify += $"{key}={parms[key]}";
             }
 
-            stringify += $"key={_apiKey},";
-            stringify += $"secret={_apiSecret}";
-            stringify += @"&";
+            //stringify += $"key={_apiKey}, ";
+            //stringify += $"secret={_apiSecret}";
+            //if(addIt)
+            //    stringify += @"&";
 
             return stringify;
         }
-
+        
         private static string SignMessage(string message)
         {
-            using (var sha1 = new SHA1Managed())
+            var msgBytes = Encoding.UTF8.GetBytes(message);
+
+            using (var sha = new SHA1CryptoServiceProvider())
             {
-                var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(message));
+                var hash = sha.ComputeHash(msgBytes);
+
                 var sb = new StringBuilder(hash.Length * 2);
 
-                foreach (byte b in hash)
+                foreach (var b in hash)
                 {
                     sb.Append(b.ToString("x2"));
                 }
