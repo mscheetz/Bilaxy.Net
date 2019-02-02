@@ -98,11 +98,16 @@ namespace Bilaxy.Net
         /// <returns>Collection of trading pairs</returns>
         public async Task<List<Asset>> GetTradingPairs()
         {
-            var coins = await GetCurrencies();
+            if (this.assets == null || this.assets.Count == 0)
+            {
+                var coins = await GetCurrencies();
 
-            var pairs = coins.Select(c => new Asset(c.SymbolId, $@"{c.Symbol}/{c.Group}")).ToList();
+                var pairs = coins.Select(c => new Asset(c.SymbolId, $@"{c.Symbol}/{c.Group}")).ToList();
 
-            return pairs;
+                this.assets = pairs;
+            }
+
+            return this.assets;
         }
 
         /// <summary>

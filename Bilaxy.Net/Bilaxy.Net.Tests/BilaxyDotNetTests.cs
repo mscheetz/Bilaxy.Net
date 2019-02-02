@@ -297,5 +297,31 @@ namespace Bilaxy.Net.Tests
             // Assert
             Assert.NotNull(address);
         }
+
+        [Fact]
+        public void GetOrders_Test()
+        {
+            // Arrange
+            var pair = "ETHBTC";
+
+            // Act
+            var orders = _svc.GetOrders(pair).Result;
+
+            // Assert
+            Assert.NotNull(orders);
+        }
+
+        [Fact]
+        public void GetOpenOrders_Test()
+        {
+            // Arrange
+            var pair = "ETHBTC";
+
+            // Act
+            var orders = _svc.GetOpenOrders(pair).Result;
+
+            // Assert
+            Assert.NotNull(orders);
+        }
     }
 }

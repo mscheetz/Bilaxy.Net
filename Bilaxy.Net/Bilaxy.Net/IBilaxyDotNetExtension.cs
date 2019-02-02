@@ -32,11 +32,11 @@ namespace Bilaxy.Net
         /// <returns>Asset of pair</returns>
         public static async Task<Asset> GetTradingPair(this IBilaxyDotNet service, string pair)
         {
-            var coins = await service.GetCurrencies();
+            var tradingPairs = await service.GetTradingPairs();
 
-            var pairs = coins.Select(c => new Asset(c.SymbolId, $@"{c.Symbol}/{c.Group}")).ToList();
+            var asset = tradingPairs.Where(c => c.Pair.Equals(pair) || c.DashedPair.Equals(pair)).FirstOrDefault();
 
-            return pairs.Where(p => p.DashedPair.Equals(pair) || p.Pair.Equals(pair)).FirstOrDefault();
+            return asset;
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Bilaxy.Net
 
             var asks = new List<DepthDetail>();
 
-            foreach(var ask in results.Asks)
+            foreach (var ask in results.Asks)
             {
                 var detail = new DepthDetail
                 {
@@ -160,11 +160,11 @@ namespace Bilaxy.Net
         /// <returns>String of deposit address</returns>
         public static async Task<string> GetDepositAddress(this IBilaxyDotNet service, string symbol)
         {
-            var currencies = await service.GetCurrencies();
-            var currency = currencies.Where(c => c.Symbol.Equals(symbol)).FirstOrDefault();
+            var currencies = await service.GetTradingPairs();
+            var currency = currencies.Where(c => c.Pair.StartsWith(symbol) || c.DashedPair.StartsWith(symbol)).FirstOrDefault();
 
             if (currency != null)
-                return await service.GetDepositAddress(currency.SymbolId);
+                return await service.GetDepositAddress(currency.AssetId);
             else
                 throw new Exception("Currency does not exist");
         }
@@ -193,6 +193,58 @@ namespace Bilaxy.Net
         /// <summary>
         /// Get open orders
         /// </summary>
+        /// <param name="pair">Trading pair</param>
+        /// <returns>Collection of Order objects</returns>
+        public static async Task<List<Order>> GetOrders(this IBilaxyDotNet service, string pair)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await service.GetOrders(asset.AssetId, 0, OrderType.AllOrders);
+        }
+
+        /// <summary>
+        /// Get open orders
+        /// </summary>
+        /// <param name="pair">Trading pair</param>
+        /// <param name="orderType">OrderType</param>
+        /// <returns>Collection of Order objects</returns>
+        public static async Task<List<Order>> GetOrders(this IBilaxyDotNet service, string pair, OrderType orderType)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await service.GetOrders(asset.AssetId, 0, orderType);
+        }
+
+        /// <summary>
+        /// Get open orders
+        /// </summary>
+        /// <param name="pair">Trading pair/param>
+        /// <param name="fromDate">From date</param>
+        /// <returns>Collection of Order objects</returns>
+        public static async Task<List<Order>> GetOrders(this IBilaxyDotNet service, string pair, long fromDate)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await service.GetOrders(asset.AssetId, fromDate, OrderType.AllOrders);
+        }
+
+        /// <summary>
+        /// Get open orders
+        /// </summary>
+        /// <param name="pair">Trading pair/param>
+        /// <param name="fromDate">From date</param>
+        /// <param name="orderType">OrderType</param>
+        /// <returns>Collection of Order objects</returns>
+        public static async Task<List<Order>> GetOrders(this IBilaxyDotNet service, string pair, long fromDate, OrderType orderType)
+        {
+            var asset = await GetTradingPair(service, pair);
+
+            return await service.GetOrders(asset.AssetId, fromDate, orderType);
+        }
+
+        /// <summary>
+        /// Get open orders
+        /// </summary>
         /// <param name="pairId">Trading pair id</param>
         /// <param name="fromDate">From date</param>
         /// <returns>Collection of Order objects</returns>
@@ -201,6 +253,20 @@ namespace Bilaxy.Net
             var unixTime = dtHelper.LocalToUnixTime(fromDate);
 
             return await service.GetOrders(pairId, unixTime, OrderType.AllOrders);
+        }
+
+        /// <summary>
+        /// Get open orders
+        /// </summary>
+        /// <param name="pairId">Trading pair id</param>
+        /// <param name="fromDate">From date</param>
+        /// <param name="orderType">OrderType</param>
+        /// <returns>Collection of Order objects</returns>
+        public static async Task<List<Order>> GetOrders(this IBilaxyDotNet service, int pairId, DateTime fromDate, OrderType orderType)
+        {
+            var unixTime = dtHelper.LocalToUnixTime(fromDate);
+
+            return await service.GetOrders(pairId, unixTime, orderType);
         }
 
         /// <summary>
